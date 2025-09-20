@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Speaking Test Part 1 Helper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl text-center">
+        <h1 class="text-4xl font-bold mb-4 text-gray-800">IELTS Speaking Helper</h1>
+        <p class="text-gray-600 mb-6">Practice for Part 1 of the IELTS Speaking Test. Speak your answer, then get feedback!</p>
+
+        <!-- Question & Topic Display -->
+        <div id="question-card" class="relative bg-purple-100 p-6 rounded-xl shadow-inner mb-6 transition-all duration-300">
+            <button id="nextButton" class="absolute top-2 right-4 text-purple-500 hover:text-purple-700 transition-colors duration-200 text-xs font-semibold uppercase tracking-wide">
+                Next Question
+            </button>
+            <span id="question-topic" class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Topic: Loading...</span>
+            <h2 id="question-text" class="text-2xl font-semibold mt-2 text-gray-800">Please wait...</h2>
+        </div>
+
+        <!-- Speech Input Box -->
+        <div class="bg-gray-50 p-6 rounded-xl shadow-inner mb-6 transition-all duration-300">
+            <p class="text-gray-500 text-sm mb-2">Your spoken answer will appear here:</p>
+            <div id="speech-text-box" class="bg-white p-4 rounded-lg border border-gray-300 h-32 overflow-y-auto text-gray-700 text-left mb-4"></div>
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <button id="toggleButton" class="bg-green-500 text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-green-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M3 8a3 3 0 016 0v4a3 3 0 11-6 0V8zm12 0a3 3 0 016 0v4a3 3 0 01-6 0V8zM5 8v2a5 5 0 0010 0V8a1 1 0 112 0v2a7 7 0 01-14 0V8a1 1 0 012 0z" clip-rule="evenodd" />
+                    </svg>
+                    Start Speaking
+                </button>
+                <div id="timer-display" class="text-lg font-bold text-gray-600 min-w-[60px] text-center">00:00</div>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex justify-center space-x-4 mb-6">
+            <button id="generateButton" class="bg-yellow-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-yellow-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2" disabled>
+                Get Feedback
+            </button>
+        </div>
+
+        <!-- Suggestions Section -->
+        <div id="feedback-section" class="hidden text-left p-6 rounded-xl shadow-lg bg-gray-50">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Suggested Improvements</h3>
+            <div id="feedback-results" class="space-y-4">
+                <!-- Results will be injected here -->
+            </div>
+            <div id="loading-spinner" class="hidden text-center mt-4">
+                <div class="w-8 h-8 border-4 border-t-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+                <p class="text-sm mt-2 text-gray-500">Generating feedback...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        var __app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        var __firebase_config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        var __initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+        const questions = [
+            { topic: "Hometown", question: "Where is your hometown?" },
+            { topic: "Hometown", question: "Do you like living there?" },
+            { topic: "Study", question: "Do you work or are you a student?" },
+            { topic: "Study", question: "What is your major or field of study?" },
+            { topic: "Work", question: "What is your job?" },
+            { topic: "Work", question: "What do you like most about your job?" },
+            { topic: "Hobbies", question: "What do you do in your free time?" },
+            { topic: "Hobbies", question: "Do you prefer to spend time alone or with friends?" },
+            { topic: "Social Media", question: "How often do you use social media?" },
+            { topic: "Social Media", question: "What is your favorite social media app?" },
+            { topic: "Family", question: "Do you have a large family or a small one?" },
+            { topic: "Family", question: "Who are you closest to in your family?" },
+            { topic: "Technology", question: "How important is technology in your daily life?" },
+            { topic: "Technology", question: "Do you think technology makes people more social or less social?" },
+            { topic: "Food", question: "Do you like cooking?" },
+            { topic: "Food", question: "What is your favorite food?" },
+            { topic: "Shopping", question: "Do you like shopping?" },
+            { topic: "Shopping", question: "What kind of things do you enjoy buying?" },
+            { topic: "Films", question: "Do you enjoy watching films?" },
+            { topic: "Films", question: "What's your favourite type of film?" },
+            { topic: "Books", question: "Do you like reading books?" },
+            { topic: "Books", question: "What is your favourite book?" },
+            { topic: "Music", question: "Do you like music?" },
+            { topic: "Music", question: "What kind of music do you listen to?" },
+            { topic: "Sports", question: "Do you like sports?" },
+            { topic: "Sports", question: "What is your favourite sport?" },
+            { topic: "Weather", question: "What is the weather like in your country?" },
+            { topic: "Weather", question: "Do you prefer sunny or rainy weather?" }
+        ];
+
+        let usedQuestionIndices = [];
+        let recognition;
+        let isRecognizing = false;
+        let finalTranscript = '';
+        let timerInterval;
+        let seconds = 0;
+
+        const questionTopicEl = document.getElementById('question-topic');
+        const questionTextEl = document.getElementById('question-text');
+        const speechTextBoxEl = document.getElementById('speech-text-box');
+        const toggleButton = document.getElementById('toggleButton');
+        const nextButton = document.getElementById('nextButton');
+        const generateButton = document.getElementById('generateButton');
+        const feedbackSection = document.getElementById('feedback-section');
+        const feedbackResults = document.getElementById('feedback-results');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const timerDisplay = document.getElementById('timer-display');
+
+        function formatTime(totalSeconds) {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            seconds = 0;
+            timerDisplay.textContent = formatTime(seconds);
+            timerInterval = setInterval(() => {
+                seconds++;
+                timerDisplay.textContent = formatTime(seconds);
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function loadNextQuestion() {
+            if (isRecognizing) {
+                recognition.stop();
+            }
+            if (usedQuestionIndices.length === questions.length) {
+                usedQuestionIndices = []; // Reset if all questions have been used
+            }
+
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * questions.length);
+            } while (usedQuestionIndices.includes(randomIndex));
+
+            usedQuestionIndices.push(randomIndex);
+            const selectedQuestion = questions[randomIndex];
+
+            questionTopicEl.textContent = `Topic: ${selectedQuestion.topic}`;
+            questionTextEl.textContent = selectedQuestion.question;
+            speechTextBoxEl.textContent = '';
+            finalTranscript = '';
+            generateButton.disabled = true;
+            feedbackSection.classList.add('hidden');
+            timerDisplay.textContent = "00:00";
+        }
+
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Your browser does not support the Web Speech API. Please use Chrome, Edge, or a similar browser.');
+                return null;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isRecognizing = true;
+                toggleButton.textContent = 'Stop Speaking';
+                toggleButton.classList.remove('bg-green-500', 'hover:bg-green-600');
+                toggleButton.classList.add('bg-red-500', 'hover:bg-red-600');
+                speechTextBoxEl.textContent = '... Listening ...';
+                generateButton.disabled = true;
+                feedbackSection.classList.add('hidden');
+                startTimer();
+            };
+
+            recognition.onend = () => {
+                isRecognizing = false;
+                toggleButton.textContent = 'Start Speaking';
+                toggleButton.classList.remove('bg-red-500', 'hover:bg-red-600');
+                toggleButton.classList.add('bg-green-500', 'hover:bg-green-600');
+                stopTimer();
+                if (finalTranscript.trim() !== '') {
+                    generateButton.disabled = false;
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                speechTextBoxEl.textContent = finalTranscript + interimTranscript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                speechTextBoxEl.textContent = `Error: ${event.error}`;
+                isRecognizing = false;
+                toggleButton.textContent = 'Start Speaking';
+                toggleButton.classList.remove('bg-red-500', 'hover:bg-red-600');
+                toggleButton.classList.add('bg-green-500', 'hover:bg-green-600');
+                stopTimer();
+            };
+
+            return recognition;
+        }
+
+        async function generateSuggestions(text) {
+            feedbackSection.classList.remove('hidden');
+            feedbackResults.innerHTML = '';
+            loadingSpinner.classList.remove('hidden');
+
+            const systemPrompt = `You are a world-class IELTS language coach. For the following user-spoken text, provide:
+1. Two to three concise, natural-sounding paraphrases of the text.
+2. A list of three relevant idioms or phrases that could have been used to improve fluency and band score. For each idiom or phrase, provide its English definition and Chinese translation. Highlight key vocabulary with bold text.
+Format your response with clear headings for each section.`;
+
+            const userQuery = `My spoken text is: "${text}"`;
+            
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            let response;
+            try {
+                let delay = 1000;
+                for (let i = 0; i < 3; i++) {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) break;
+                    console.warn(`Attempt ${i + 1} failed. Retrying in ${delay / 1000}s...`);
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+
+                if (!response.ok) throw new Error('Failed to fetch from API after multiple retries.');
+                const result = await response.json();
+                const textResult = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (textResult) {
+                    const htmlContent = marked(textResult);
+                    feedbackResults.innerHTML = htmlContent;
+                } else {
+                    feedbackResults.innerHTML = `<p class="text-red-500">Could not generate suggestions. Please try again.</p>`;
+                }
+            } catch (error) {
+                console.error('API call failed:', error);
+                feedbackResults.innerHTML = `<p class="text-red-500">An error occurred: ${error.message}.</p>`;
+            } finally {
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // Markdown-to-HTML converter
+        function marked(text) {
+            let html = text.replace(/###\s*(.*)/g, '<h3 class="text-xl font-bold mt-4 mb-2 text-gray-700">$1</h3>');
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            const lines = html.split('\n');
+            let finalHtml = '';
+            let inList = false;
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('<li>') || line.startsWith('<ul>') || line.startsWith('</ul>')) {
+                    if (!inList) {
+                        inList = true;
+                        finalHtml += `<ul class="list-disc list-inside space-y-1">`;
+                    }
+                    finalHtml += line;
+                } else if (line.startsWith('* ') || line.startsWith('- ')) {
+                    if (!inList) {
+                        finalHtml += `<ul class="list-disc list-inside space-y-1">`;
+                        inList = true;
+                    }
+                    finalHtml += `<li>${line.substring(2)}</li>`;
+                } else {
+                    if (inList) {
+                        finalHtml += `</ul>`;
+                        inList = false;
+                    }
+                    if (line) {
+                        finalHtml += `<p class="mb-2">${line}</p>`;
+                    }
+                }
+            });
+
+            if (inList) {
+                finalHtml += `</ul>`;
+            }
+
+            return finalHtml;
+        }
+
+        window.onload = () => {
+            loadNextQuestion();
+            recognition = setupSpeechRecognition();
+
+            toggleButton.addEventListener('click', () => {
+                if (recognition) {
+                    if (isRecognizing) {
+                        recognition.stop();
+                    } else {
+                        recognition.start();
+                    }
+                }
+            });
+
+            nextButton.addEventListener('click', () => {
+                loadNextQuestion();
+            });
+
+            generateButton.addEventListener('click', () => {
+                if (finalTranscript.trim() !== '') {
+                    generateSuggestions(finalTranscript);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
